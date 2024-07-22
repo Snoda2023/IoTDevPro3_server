@@ -44,6 +44,14 @@ def index():
                          avg_temperature=avg_temperature,
                          avg_humidity=avg_humidity,
                          max_value=len(data_list))
+  @app.route("/", methods=["POST"])
+def index2():
+    text_from_html = request.form['new_tempe']
+    print(text_from_html)
+    #
+    #
+    return render_template("index.html") 
+    # example41 is being used.
 
 if __name__ == "__main__":
   app.run(host = '0.0.0.0', port = 5001, debug=True)
