@@ -3,7 +3,7 @@
 # Created by Shotar Noda(TK220137) on 2024/07/22.
 
 from flask import Flask, request, render_template
-import csv
+import csv, datetime
 
 app = Flask(__name__)
 
@@ -30,8 +30,10 @@ def index():
         data_list.append(row)
         if len(row) >= 2:
           try:
-              total_temperature += float(row[0])
-              total_humidity += float(row[1])
+              dt = datetime.datetime.fromtimestamp(row[1])
+              row[1] = dt.replace(second=0, microsecond=0)
+              total_temperature += float(row[2])
+              total_humidity += float(row[3])
               count += 1
           except ValueError:
               continue
@@ -51,9 +53,16 @@ def index():
 ## データ追加API
 @app.route("/api/add_data", methods=["POST"])
 def add_data():
-    text_from_html = request.form['new_tempe']
-    print(text_from_html)
-    return render_template("index.html") 
+    new_tempe = request.form.get('new_tempe')
+    if new_tempe:
+        print(f"New temperature: {new_tempe}")
+        write_csv("./data/dummy_data.csv", [new_tempe])
+    return "Temperature data has been written to the CSV file."
+  
+def write_csv(path1, data):
+    with open(path1, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
 
 if __name__ == "__main__":
   app.run(host = '0.0.0.0', port = 5001, debug=True)
