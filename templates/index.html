@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "base_layout.html" %}
 
 {% block header %}
 <div class="my-2" style="margin-left:40px;">
@@ -10,29 +10,28 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-2" style="min-height:800px;">
+<div class="container mt-2" style="min-height:600px;">
   ❖ こんにちは、{{ name }}さん。
-  <table class="table mt-1" style="max-width:700px;">
+  <table class="table table-striped table-hover table-sm mt-1 text-nowrap" style="max-width:700px;">
     <thead>
       <tr>
-        <th scope="col">#</th>
+        <th scope="col">No.</th>
+        <th scope="col">ノード名</th>
+        <th scope="col">時刻</th>
         <th scope="col">温度(℃)</th>
         <th scope="col">湿度(%)</th>
       </tr>
     </thead>
     <tbody>
-    {% for i in range(0,max_value) %}
+    {% for i in range(0, max_value) %}
       <tr>
         <th scope="row">{{ i+1 }}</th>
         <td>{{ data_list[i][0] }}</td>
         <td>{{ data_list[i][1] }}</td>
+        <td>{{ data_list[i][2] }}</td>
+        <td>{{ data_list[i][3] }}</td>
       </tr>
     {% endfor %}
-
-    <form action="/" method="POST">
-      <label for="example">追加データ温度</label>
-      <input id="example" type="text" name="new_tempe">
-      <input type="submit" value="送信">
       
     </tbody>
   </table>
@@ -45,7 +44,9 @@
 {% endblock %}
 
 {% block footer %}
-<div class="w-100">
-  Footer
+<div class="w-100 py-4 bg-secondary">
+  <div class="text-white text-center">
+    IoTデバイスプログラミングIII, グループ3
+  </div>
 </div>
 {% endblock %}

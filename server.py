@@ -1,53 +1,66 @@
-# Work08 (IoT Device Programming 3 Week 8)
+# Work10 (IoT Device Programming 3 Week 13)
 # Group 3
-# Created by Shotar Noda(TK220137) on 2024/07/05.
+# Created by Shotar Noda(TK220137) on 2024/07/29.
 
+import socket, os, threading, json, fasteners
 from datetime import timedelta, timezone, datetime
-import socket, os, json
 from dotenv import load_dotenv
-from time import sleep
 load_dotenv()
 
+def socket_receiver(connection, address, lock):
+  print(f"[{get_current_date()}]Connection from {str(address)} has been established.")
+  data_receive = connection.recv(4096)
+  data_decoded = data_receive.decode('utf-8')
+  data_json = json.loads(data_decoded)
+  
+  data_listed = []
+  for i in range(len(data_json)):
+      print(data_json[i])
+      single_data = data_json[i]
+      data_listed.append([single_data["hostname"],
+                          single_data["timestamp"],
+                          single_data["temp_dht"],
+                          single_data["humid_dht"]])
+      
+  lock.acquire()
+  save_csv(data_listed)
+  lock.release()
+  print(f"[{get_current_date()}]CSV saved.")
+
+## 日時取得関数
 def get_current_date():
   return datetime.now(timezone(timedelta(hours=+9), 'Asia/Tokyo'))
 
+## CSV保存関数
 def save_csv(list_data):
-  now = get_current_date
-  with open(f'data/{now.strftime("%Y%m%d_%H%M%S")}.csv', mode="w") as f:
+  with open(f'data/dummy_data.csv', mode="a") as f:
     for row in list_data:
       print(*row, sep=',', file=f)
   f.close()
-  
-def start_server():
-  socket_w = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  socket_w.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  
-  socket_w.bind((os.getenv('SERVER_ADDR'), os.getenv('WAITING_PORT')))
-  socket_w.listen(5)
-  
-  try:
-    while True:
-      socket_s_r, client_address = socket_w.accept()
-      print(f"[{get_current_date}]Connection from {str(client_address)} has been established.")
 
-      data_r = socket_s_r.recv(1024)
-      data_r_j = data_r.decode('utf-8')
-      data_r_list = json.loads(data_r_j)
-      
-      data_listed = []
-      for i in range(len(data_r_list)):
-          print(data_r_list[i])
-          single_data = data_r_list[i]
-          data_listed.append([single_data["temp_dht"], single_data["humid_dht"]])
-          
-      save_csv(data_listed)
-      print(f"[{get_current_date}]CSV saved.")
-      
-      sleep(5)
-      socket_s_r.close()
-      
-  except KeyboardInterrupt:
-    socket_s_r.close()
-    socket_w.close()
-    print(f"[{get_current_date}]Server Stopped!")
-    
+if __name__ == '__main__':
+  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 5)
+  sock.bind((os.getenv('SERVER_ADDR'), int(os.getenv('WAITING_PORT'))))
+  sock.listen(int(os.getenv('MAX_CLIENT')))
+  
+  sock.settimeout(0.5)
+  
+  lock = fasteners.InterProcessLock('/var/tmp/lockfile')
+  
+  while True:
+    try:
+      conn, addr = sock.accept()
+      if conn:
+        thread = threading.Thread(target=socket_receiver, args=(conn, addr, lock), daemon=True)
+        thread.start()
+    except KeyboardInterrupt:
+      sock.close()
+      print(f"[{get_current_date()}]Server Stopped.")
+      exit()
+    except socket.timeout:
+      continue
+    except Exception as e:
+      sock.close()
+      print(e)
+      exit()
